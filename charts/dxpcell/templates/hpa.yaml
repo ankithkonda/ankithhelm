@@ -1,0 +1,28 @@
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "dxpcell.fullname" . }}-hpa
+  labels:
+    dxp.cell/name: {{ include "dxpcell.name" . }}
+    dxp.cell/template-version: {{ .Chart.Version }}
+    dxp.cell/managed-by: {{ .Release.Service }}
+    dxp.module/name: {{ .Release.Name }}
+    dxp.module/release-version: "{{ .Release.Revision }}"
+    dxp.tenant/id: {{ .Values.global.tenantId }}
+    dxp.domain/name: {{ .Values.global.domainName }}
+    helm.sh/chart: {{ include "dxpcell.chart" . }}
+    tenantId: {{ .Values.global.tenantId }}
+  annotations:
+    dxp.tenant/email: {{ .Values.global.tenantAdminEmail }}
+    dxp.cell/component-list: '{"service": "service1", "service": "example-proxy", "function": "compare-values"}'
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "dxpcell.fullname" . }}
+  minReplicas: {{ .Values.podAutoscalerMinReplicas }}
+  maxReplicas: {{ .Values.podAutoscalerMaxReplicas }}
+  metrics:
+  {{- with .Values.podAutoscalerMetrics }}
+{{ toYaml . | indent 2 }}
+  {{- end }}

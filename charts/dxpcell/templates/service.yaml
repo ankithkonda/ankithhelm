@@ -1,0 +1,29 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dxpcell.fullname" . }}-service
+  labels:
+    dxp.cell/name: {{ include "dxpcell.name" . }}
+    dxp.cell/instance: {{ .Release.Name }}
+    dxp.cell/template-version: {{ .Chart.Version }}
+    dxp.cell/managed-by: {{ .Release.Service }}
+    dxp.module/name: {{ .Release.Name }}
+    dxp.module/release-version: "{{ .Release.Revision }}"
+    dxp.tenant/id: {{ .Values.global.tenantId }}
+    dxp.domain/name: {{ .Values.global.domainName }}
+    helm.sh/chart: {{ include "dxpcell.chart" . }}
+    tenantId: {{ .Values.global.tenantId }}
+  annotations:
+    dxp.tenant/email: {{ .Values.global.tenantAdminEmail }}
+    dxp.tenant/display-name: '{{ .Values.global.tenantDisplayName }}'
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      name: http
+  selector:
+    dxp.cell/name: {{ include "dxpcell.name" . }}
+    dxp.cell/instance: {{ .Release.Name }}
+{{- end }}

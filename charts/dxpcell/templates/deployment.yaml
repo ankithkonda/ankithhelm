@@ -1,0 +1,81 @@
+{{- if (eq .Values.serverless.enabled false) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dxpcell.fullname" . }}-deployment
+  labels:
+    dxp.cell/name: {{ include "dxpcell.name" . }}
+    dxp.cell/template-version: {{ .Chart.Version }}
+    dxp.cell/managed-by: {{ .Release.Service }}
+    dxp.module/name: {{ .Release.Name }}
+    dxp.module/release-version: "{{ .Release.Revision }}"
+    dxp.tenant/id: {{ .Values.global.tenantId }}
+    dxp.domain/name: {{ .Values.global.domainName }}
+    helm.sh/chart: {{ include "dxpcell.chart" . }}
+    tenantId: {{ .Values.global.tenantId }}
+  annotations:
+    dxp.tenant/email: {{ .Values.global.tenantAdminEmail }}
+    dxp.tenant/display-name: '{{ .Values.global.tenantDisplayName }}'
+    dxp.cell/component-list: '{"service": "service1", "service": "example-proxy", "function": "compare-values"}'
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      dxp.cell/name: {{ include "dxpcell.name" . }}
+      dxp.cell/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        dxp.cell/name: {{ include "dxpcell.name" . }}
+        dxp.cell/instance: {{ .Release.Name }}
+        dxp.cell/version: {{ .Chart.Version }}
+        dxp.cell/managed-by: {{ .Release.Service }}
+        dxp.module/name: {{ .Release.Name }}
+        dxp.module/release-version: "{{ .Release.Revision }}"
+        dxp.tenant/id: {{ .Values.global.tenantId }}
+        dxp.domain/name: {{ .Values.global.domainName }}
+        helm.sh/chart: {{ include "dxpcell.chart" . }}
+        tenantId: {{ .Values.global.tenantId }}
+      annotations:
+        sidecar.istio.io/inject: "{{ .Values.istio.enabled }}"
+        traffic.sidecar.istio.io/excludeOutboundIPRanges: 0.0.0.0/0
+        dxp.tenant/email: {{ .Values.global.tenantAdminEmail }}
+        dxp.tenant/display-name: '{{ .Values.global.tenantDisplayName }}'
+# needs refactoring to be a loop and iterate over container names
+        dxp.cell/component-list: '{"service": "service1", "service": "example-proxy", "function": "compare-values"}'
+    spec:
+      serviceAccountName: {{ include "dxpcell.serviceAccountName" . }}
+    {{- with .Values.containers }}
+      containers:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: dxp.cell/name
+                  operator: In
+                  values:
+                  - {{ include "dxpcell.name" . }}
+              topologyKey: failure-domain.beta.kubernetes.io/zone
+          - weight: 70
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: dxp.cell/name
+                  operator: In
+                  values:
+                  - {{ include "dxpcell.name" . }}
+              topologyKey: kubernetes.io/hostname
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end }}

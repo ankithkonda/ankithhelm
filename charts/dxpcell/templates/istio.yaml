@@ -1,0 +1,24 @@
+{{- if and .Values.service.enabled .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ include "dxpcell.fullname" . }}-istio-vs
+spec:
+  hosts:
+{{- if eq ( include "dxpcell.name" . ) "dxpfrontend"}}
+  - {{ .Release.Namespace }}.quadient-test.local
+{{- else }}
+  - {{ include "dxpcell.name" . }}.{{ .Release.Namespace }}.quadient-test.local
+{{- end }}
+  gateways:
+  - gateway-{{ .Release.Namespace }}
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: {{ include "dxpcell.fullname" . }}-service.{{ .Release.Namespace }}.svc.cluster.local
+        port:
+          number: {{ .Values.service.port }}
+{{- end }}

@@ -1,0 +1,27 @@
+{{- if .Values.metadataRbac.create }}
+kind: {{ if .Values.metadataRbac.clusterAdmin }}ClusterRole{{- else }}Role{{- end }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    dxp.cell/name: {{ include "dxpcell.name" . }}
+    dxp.cell/instance: {{ .Release.Name }}
+    dxp.cell/template-version: {{ .Chart.Version }}
+    dxp.cell/managed-by: {{ .Release.Service }}
+    dxp.module/name: {{ .Release.Name }}
+    dxp.module/release-version: "{{ .Release.Revision }}"
+    dxp.tenant/id: {{ .Values.global.tenantId }}
+    dxp.domain/name: {{ .Values.global.domainName }}
+    helm.sh/chart: {{ include "dxpcell.chart" . }}
+    tenantId: {{ .Values.global.tenantId }}
+  name: {{ include "dxpcell.fullname" . }}
+{{- if not .Values.metadataRbac.clusterAdmin }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods", "services", "namespaces"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps", "extensions"]
+  resources: ["deployments"]
+  verbs: ["get", "watch", "list"]
+{{- end }}

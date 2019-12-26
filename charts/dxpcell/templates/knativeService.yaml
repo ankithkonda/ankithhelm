@@ -1,0 +1,28 @@
+{{- if (eq .Values.serverless.enabled true) }}
+apiVersion: serving.knative.dev/v1alpha1                                     
+kind: Service
+metadata:
+  name: {{ include "dxpcell.fullname" . }}-ksvc                          
+  namespace: {{ .Release.Namespace }}                                        
+  labels:
+    dxp.cell/name: {{ include "dxpcell.name" . }}
+    dxp.cell/instance: {{ .Release.Name }}
+    dxp.cell/template-version: {{ .Chart.Version }}
+    dxp.cell/managed-by: {{ .Release.Service }}
+    dxp.module/name: {{ .Release.Name }}
+    dxp.module/release-version: "{{ .Release.Revision }}"
+    dxp.tenant/id: {{ .Values.global.tenantId }}
+    dxp.domain/name: {{ .Values.global.domainName }}
+    helm.sh/chart: {{ include "dxpcell.chart" . }}
+    tenantId: {{ .Values.global.tenantId }}
+  annotations:
+    dxp.tenant/email: {{ .Values.global.tenantAdminEmail }}
+    dxp.tenant/display-name: '{{ .Values.global.tenantDisplayName }}'
+spec:
+  template:
+    spec:
+    {{- with .Values.containers }}
+      containers:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end }}
